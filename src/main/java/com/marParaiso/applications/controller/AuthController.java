@@ -4,6 +4,7 @@ import com.marParaiso.applications.dto.LoginRequestDto;
 import com.marParaiso.applications.dto.RegisterRequestDto;
 import com.marParaiso.applications.ports.RolRepository;
 import com.marParaiso.applications.ports.UserRepository;
+import com.marParaiso.applications.usecase.impl.UserServiceImpl;
 import com.marParaiso.domain.entity.Role;
 import com.marParaiso.domain.entity.User;
 import com.marParaiso.infrastructure.configuration.JwtTokenProvider;
@@ -30,18 +31,22 @@ public class AuthController {
     private final JpaUserRepository userRepository;
     private final RolRepository rolRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final UserServiceImpl userService;
 
     public AuthController(@Lazy AuthenticationManager authenticationManager,
                           JwtTokenProvider jwtTokenProvider,
                           UserRepository userRepository,
                           RolRepository rolRepository,
                           BCryptPasswordEncoder passwordEncoder,
-                          JpaUserRepository jpaUserRepository) {
+                          JpaUserRepository jpaUserRepository,
+                          UserServiceImpl userService) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
         this.userRepository = jpaUserRepository;
+        this.userService = userService;
+
     }
 
     @PostMapping("/login")
@@ -59,25 +64,16 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequestDto registerRequest) {
+
+        System.out.println("Datos recibidos: " + registerRequest);
+
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             return ResponseEntity.badRequest().body("Error: El nombre de usuario ya está en uso.");
         }
 
-        if (registerRequest.getRole() == null || registerRequest.getRole().isEmpty()) {
-            return ResponseEntity.badRequest().body("Error: El rol no puede estar vacío.");
-        }
-
-        User newUser = new User();
-        newUser.setUsername(registerRequest.getUsername());
-        newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-
-        Role userRole = rolRepository.findByName(registerRequest.getRole())
-                .orElseThrow(() -> new IllegalArgumentException("Error: El rol no existe."));
-
-        newUser.setRoles(Collections.singleton(userRole));
-
-        userRepository.save(newUser);
+        User newUser = userService.createUser(registerRequest.getUsername(), registerRequest.getPassword());
 
         return ResponseEntity.ok("Usuario registrado exitosamente.");
     }
+
 }

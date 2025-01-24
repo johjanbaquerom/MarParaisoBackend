@@ -32,6 +32,12 @@ public class Product {
     @Column(name = "cantidad")
     private int stock;
 
+    @Column(name = "imagen", nullable = true)  // Especifica el nombre de la columna en la base de datos
+    private String imageUrl;
+
+    @Column(name = "categoria", nullable = true)
+    private String category;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -45,3 +51,4 @@ public class Product {
         return Objects.hash(name);
     }
 }
+

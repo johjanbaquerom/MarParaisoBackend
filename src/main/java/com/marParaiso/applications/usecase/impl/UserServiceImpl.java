@@ -22,7 +22,7 @@ public class UserServiceImpl {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User createUser(String username, String password, boolean isAdmin) {
+    public User createUser(String username, String password) {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("El nombre de usuario ya está en uso.");
         }
@@ -31,8 +31,10 @@ public class UserServiceImpl {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
 
-        Role role = roleRepository.findByName(isAdmin ? "ROLE_ADMIN" : "ROLE_USER")
-                .orElseThrow(() -> new IllegalArgumentException("El rol no existe."));
+        // Asignar el rol "ROLE_USER" por defecto
+        Role role = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new IllegalArgumentException("El rol 'ROLE_USER' no existe."));
+
         user.setRoles(Set.of(role));
 
         return userRepository.save(user);

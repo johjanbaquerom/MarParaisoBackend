@@ -14,4 +14,6 @@ public interface ProductService {
     void deleteProduct(Long id);
     void updateStock(Long productId, int quantity);
     Product getProductEntityById(Long id);
+    void updateProductImage(Long productId, String imageUrl);
+    List<ProductDTO> getFilteredProducts(String search, String category);
 }

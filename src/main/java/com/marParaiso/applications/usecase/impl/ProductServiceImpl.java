@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,12 +37,57 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO createProduct(ProductDTO productDTO) {
+        if (productDTO.getCategory() == null || productDTO.getCategory().isEmpty()) {
+            productDTO.setCategory("default_category");
+        }
+
         Product product = new Product();
         product.setName(productDTO.getName());
         product.setDescription(productDTO.getDescription());
         product.setPrice(productDTO.getPrice());
         product.setStock(productDTO.getStock());
+
+        String imageUrl = productDTO.getImageUrl();
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            System.out.println("Llamando a assignImageByCategory...");
+            imageUrl = assignImageByCategory(productDTO.getCategory());
+        }
+
+        System.out.println("imageUrl: " + imageUrl);
+        product.setImageUrl(imageUrl); // Se asigna la URL obtenida por categoría
+        product.setCategory(productDTO.getCategory());
+
         return mapToProductDTO(productRepository.save(product));
+    }
+
+    private String assignImageByCategory(String category) {
+        String imageUrl;
+        if (category == null || category.isEmpty()) {
+            imageUrl = "/images/default.jpg"; // Ruta local
+        } else {
+            String categoryLower = category.toLowerCase();
+            switch (categoryLower) {
+                case "poker":
+                    imageUrl = "/images/poker.jpg"; // Ruta local
+                    break;
+                case "costeña":
+                    imageUrl = "/images/costeña.jpg"; // Ruta local
+                    break;
+                case "aguila":
+                    imageUrl = "/images/aguila.jpg"; // Ruta local
+                    break;
+                case "aguila light":
+                    imageUrl = "/images/aguilaLight.jpg";
+                    break;
+                case "aguardiente":
+                    imageUrl = "/images/aguardiente.jpg"; // Ruta local
+                    break;
+                default:
+                    imageUrl = "/images/default.jpg"; // Ruta local
+            }
+        }
+        System.out.println("Image URL: " + imageUrl); // Agrega este log para verificar
+        return imageUrl;
     }
 
     @Override
@@ -84,4 +130,37 @@ public class ProductServiceImpl implements ProductService {
                 .stock(product.getStock())
                 .build();
     }
+
+    public void updateProductImage(Long productId, String imageUrl) {
+        Optional<Product> productOptional = productRepository.findById(productId);
+        if (productOptional.isPresent()) {
+            Product product = productOptional.get();
+            product.setImageUrl(imageUrl);
+            productRepository.save(product);
+        } else {
+            throw new RuntimeException("Producto no encontrado");
+        }
+    }
+
+    @Override
+    public List<ProductDTO> getFilteredProducts(String search, String category) {
+        List<Product> products = productRepository.findAll();
+
+        if (search != null && !search.isEmpty()) {
+            products = products.stream()
+                    .filter(p -> p.getName().toLowerCase().contains(search.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
+        if (category != null && !category.isEmpty()) {
+            products = products.stream()
+                    .filter(p -> p.getCategory() != null && p.getCategory().toLowerCase().equals(category.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
+        return products.stream()
+                .map(this::mapToProductDTO)
+                .collect(Collectors.toList());
+    }
 }
+
